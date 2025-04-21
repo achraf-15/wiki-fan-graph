@@ -33,7 +33,7 @@ class cuGraph:
         if self.graph_type == 'chunk':
             filename = "chunk_knowledge_graph.json"
             file_path = os.path.join(f"{self.outdir}/knowledge_graph", filename)
-        elif self.raph_type == 'page':
+        elif self.graph_type == 'page':
             filename = "page_knowledge_graph.json"
             file_path = os.path.join(f"{self.outdir}/knowledge_graph", filename)
         else:

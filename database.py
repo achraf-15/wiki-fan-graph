@@ -29,6 +29,7 @@ class EmbeddingDatabase:
                     chunk_id TEXT UNIQUE,
                     url TEXT,
                     title TEXT,
+                    category TEXT,
                     section TEXT,
                     text TEXT,
                     embedding vector({EMBEDDING_DIM})
@@ -56,12 +57,12 @@ class EmbeddingDatabase:
         """Insert embeddings data into the embeddings table."""
         with self.conn.cursor() as cur:
             rows = [
-                (doc['chunk_id'], doc['url'], doc['title'], doc['section'], doc['text'], doc['embedding'])
+                (doc['chunk_id'], doc['url'], doc['title'], doc['category'], doc['section'], doc['text'], doc['embedding'])
                 for doc in data if doc['embedding'].any()
             ]
             execute_batch(cur, """
-                INSERT INTO embeddings (chunk_id, url, title, section, text, embedding)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO embeddings (chunk_id, url, title, category, section, text, embedding)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (chunk_id) DO NOTHING;
             """, rows, page_size=page_size)
             self.conn.commit()
