@@ -1,16 +1,10 @@
 # main.py
 
-from config import METADATA_DIR, MODEL_NAME, MAX_TOKENS
+from config import METADATA_DIR
 from database import EmbeddingDatabase
-#from embedding.model import HuggingFaceEmbedding, TextChunker,  process_batch , OllamaEmbedding #, vllmEmbedding
 from embedding.model import OllamaEmbedding, process_batch
 from embedding.dataloader import load_all_chunks, batch_chunks
-
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import numpy as np
-
-#from transformers import AutoTokenizer
 
 
 def embedding_main(batch_size = 64, reset_table = True, verbose=1):
@@ -24,7 +18,6 @@ def embedding_main(batch_size = 64, reset_table = True, verbose=1):
         print("Loading and Preprocessing texts...")
     # Load + preprocess 
     all_chunks = load_all_chunks(METADATA_DIR)
-    all_chunks = all_chunks[:150]
     #all_chunks = chunker.preprocess_texts(all_chunks)
     #chunker.save_indices(all_chunks)
 
@@ -33,7 +26,7 @@ def embedding_main(batch_size = 64, reset_table = True, verbose=1):
 
     post_processed_data = [] 
     for batch in tqdm(batch_chunks(all_chunks, batch_size), total=len(all_chunks)//batch_size, desc="Embedding Chunks...",disable=(verbose<1)):
-        batch_data = process_batch(batch, model, batch_size)
+        batch_data = process_batch(batch, model)
         post_processed_data.extend(batch_data)
 
      # Setup

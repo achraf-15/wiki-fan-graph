@@ -2,7 +2,6 @@
 
 import os
 import json
-from tqdm import tqdm 
 
 def load_all_chunks(metadata_dir):
     """Load all JSON files and concatenate all chunks."""

@@ -9,6 +9,7 @@ update_only = True # to do: use levels (with or without sub pages)
 batch_size = 32
 reset_table = True # argument orchestration, reset_table = not(update_only); force_reset_table ( see cli jargon )
 
+top_k = 3
 save_to_local=True
 from_local=False 
 
@@ -31,9 +32,10 @@ if __name__ == "__main__":
     )
 
     
-    # build_main(
-    #     save_to_local=save_to_local, 
-    #     from_local=from_local, 
-    #     verbose=verbose
-    # )
+    build_main(
+        top_k = top_k,
+        save_to_local=save_to_local, 
+        from_local=from_local, 
+        verbose=verbose
+    )
     

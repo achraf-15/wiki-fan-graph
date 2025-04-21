@@ -2,20 +2,19 @@
 
 import os
 import json
-import copy
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
 from networkx.readwrite import json_graph
-from database import EmbeddingDatabase
 
-from knowledge_graph.utils import load_data_json_files, load_graph_json_files, load_chunk_indices
+from knowledge_graph.utils import load_data_json_files, load_graph_json_files, load_page_json_files
 
 
 class KnowledgeGraph:
-    def __init__(self, data_dir, metadata_dir, graph_dir, EmbeddingDatabase,verbose=1):
+    def __init__(self, data_dir, metadata_dir, page_dir, graph_dir, EmbeddingDatabase,verbose=1):
         self.data_dir = data_dir
         self.metadata_dir = metadata_dir
+        self.page_dir = page_dir
         self.graph_dir = graph_dir
         self.db = EmbeddingDatabase()
         self.graph = nx.DiGraph()
@@ -24,47 +23,49 @@ class KnowledgeGraph:
         self.page_graph = None
         self.verbose = verbose
 
-    def build(self):
-        """Build the initial knowledge graph from metadata and edge definitions."""
+    def setup(self):
+        """Setup and build the initial knowledge graph from metadata and edge definitions."""
 
         metadata_data = load_data_json_files(self.metadata_dir)
         graph_data = load_graph_json_files(self.graph_dir)
-
-        self.chunk2subs = load_chunk_indices(self.data_dir)
+        page_data = load_page_json_files(self.page_dir)
 
         valid_docs = set()
         valid_chunks = set()
 
         # Add nodes
         for chunk in metadata_data:
-            for sub in self.chunk2subs[chunk['chunk_id']]:
-                chunk_id = sub
-                title = chunk['title']
-                section = chunk['section']
+            chunk_id = chunk['chunk_id']
+            title = chunk['title']
+            category = chunk['category']
+            section = chunk['section']
 
-                self.graph.add_node(chunk_id, title=title, section=section, type='chunk')
-                valid_chunks.add(chunk_id)
+            self.graph.add_node(chunk_id, title=title, category=category, section=section, type='chunk')
+            valid_chunks.add(chunk_id)
 
-            self.graph.add_node(title, type='document')
+        for page in page_data:
+            title = page['title']
+            category = page['category']
+
+            self.graph.add_node(title, category=category, type='document')
             valid_docs.add(title)
 
-        print("Valid Document Nodes:", len(valid_docs))
-        print("Valid Chunk Nodes:", len(valid_chunks))
+        if self.verbose:
+            print("Valid Document Nodes:", len(valid_docs))
+            print("Valid Chunk Nodes:", len(valid_chunks))
 
         # Add edges
         for source, targets in graph_data.items():
-            for source_sub in self.chunk2subs.get(source,[source]):
-                for target, label in targets:
-                    for target_sub in self.chunk2subs.get(target,[target]):
-                        if target in valid_docs or label == "chunk":
-                            self.graph.add_edge(source_sub, target_sub, label=label)
+            for target, label in targets:
+                if target in valid_docs or label == "chunk":
+                    self.graph.add_edge(source, target, label=label)
 
-    def reduce_with_embeddings(self, top_k=3):
+    def build(self, top_k=3):
         """Connect chunk nodes directly using top-k nearest neighbors based on vector similarity."""
         G = self.graph.copy()
         nodes_to_remove = []
 
-        for chunk_node, data in tqdm(G.nodes(data=True), desc="Reducing and Connecting Chunk Nodes", disable=(self.verbose<2)):
+        for chunk_node, data in tqdm(G.nodes(data=True), desc="Connecting Chunk Nodes", disable=(self.verbose<2)):
             if data.get('type') != 'chunk':
                 continue
 
@@ -116,11 +117,11 @@ class KnowledgeGraph:
         else:
             raise ValueError("graph_type must be 'chunk' or 'page'")
 
-        data = json_graph.node_link_data(G)
+        data = json_graph.node_link_data(G, edges="links")
 
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=2)
-        if self.verbose:
+        if self.verbose>=2:
             print(f"Graph saved to {file_path}")
 
     def load(self, outdir: str, graph_type: str = 'chunk'):
@@ -142,11 +143,11 @@ class KnowledgeGraph:
             data = json.load(f)
 
         if graph_type == 'chunk':
-            self.chunk_graph = json_graph.node_link_graph(data)
+            self.chunk_graph = json_graph.node_link_graph(data, edges="links")
         elif graph_type == 'page':
-            self.page_graph = json_graph.node_link_graph(data)
+            self.page_graph = json_graph.node_link_graph(data, edges="links")
         else:
             raise ValueError("graph_type must be 'chunk' or 'page'")    
         
-        if self.verbose:
+        if self.verbose>=2:
             print(f"Graph loaded from {file_path}")

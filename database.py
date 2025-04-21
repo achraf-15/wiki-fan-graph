@@ -6,7 +6,6 @@ from pgvector.psycopg2 import register_vector
 from config import DB_CONFIG, EMBEDDING_DIM
 
 import pandas as pd
-import pandas.io.sql as sqlio
 
 class EmbeddingDatabase:
 
@@ -46,10 +45,10 @@ class EmbeddingDatabase:
     def to_pandas(self):
         with self.conn.cursor() as cur:
             cur.execute(
-                    "SELECT chunk_id, title, embedding FROM embeddings",
+                    "SELECT chunk_id, url, title, category, section, text, embedding FROM embeddings",
                 )
             tuples_list  = cur.fetchall()
-        df = pd.DataFrame(tuples_list, columns=["chunk_id", "title", "embedding"])
+        df = pd.DataFrame(tuples_list, columns=["chunk_id", "url", "title", "category", "section", "text", "embedding"])
         return df
 
 
@@ -80,7 +79,7 @@ class EmbeddingDatabase:
                     (embedding, list(subset), topk)
                     )
             top_chunks = cur.fetchall()
-        return [(chunk_id, -similarity) for chunk_id, similarity in top_chunks] if top_chunks else None
+        return [(chunk_id, -similarity) for chunk_id, similarity in top_chunks] if top_chunks else list()
     
     def get_embedding(self, chunk_id):
         with self.conn.cursor() as cur:

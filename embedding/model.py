@@ -1,26 +1,41 @@
 # embedding/model.py
 
-from tqdm import tqdm
 import numpy as np
-#import torch # type: ignore
-#from transformers import AutoTokenizer
-#from sentence_transformers import SentenceTransformer # type: ignore
-#from openai import OpenAI
 import ollama
-import json
-import os
-
-
 
 class OllamaEmbedding:
     def __init__(self, model="nomic-embed-text"):
         self.model = model
 
-    def encode(self, texts, batch_size):
+    def encode(self, texts):
         result = ollama.embed(model=self.model, input=texts)
         return np.array(result["embeddings"])
-        
-  
+    
+
+
+def process_batch(batch_data, embedding_model):
+    texts = [chunk['text'] for chunk in batch_data]
+    embeddings = embedding_model.encode(texts)
+
+    return [
+        {
+            'chunk_id': chunk['chunk_id'],
+            'url': chunk['url'],
+            'title': chunk['title'],
+            'section': chunk['section'],
+            'category': chunk['category'],
+            'text': chunk['text'],
+            'embedding': embedding
+        }
+        for chunk, embedding in zip(batch_data, embeddings)
+    ]
+
+#import torch 
+#from transformers import AutoTokenizer
+#from sentence_transformers import SentenceTransformer 
+#from openai import OpenAI
+# 
+#   
 # class vllmEmbedding:
 #     def __init__(self, base_url="http://localhost:8000/v1"):
 #         self.client = OpenAI(base_url=base_url, api_key="not-needed")
@@ -101,21 +116,3 @@ class OllamaEmbedding:
 #         chunk2subs = self.get_indices(chunks)
 #         with open(file_path, "w", encoding="utf-8") as f:
 #             json.dump(chunk2subs, f, indent=2, ensure_ascii=False)
-
-
-def process_batch(batch_data, embedding_model, batch_size=None):
-    texts = [chunk['text'] for chunk in batch_data]
-    embeddings = embedding_model.encode(texts, batch_size)
-
-    return [
-        {
-            'chunk_id': chunk['chunk_id'],
-            'url': chunk['url'],
-            'title': chunk['title'],
-            'section': chunk['section'],
-            'category': chunk['category'],
-            'text': chunk['text'],
-            'embedding': embedding
-        }
-        for chunk, embedding in zip(batch_data, embeddings)
-    ]

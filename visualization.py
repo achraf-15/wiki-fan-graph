@@ -43,9 +43,9 @@ class cuGraph:
             data = json.load(f)
 
         if self.graph_type == 'chunk':
-            graph = json_graph.node_link_graph(data)
+            graph = json_graph.node_link_graph(data, edges="links")
         elif self.graph_type == 'page':
-            graph = json_graph.node_link_graph(data)
+            graph = json_graph.node_link_graph(data, edges="links")
         else:
             raise ValueError("graph_type must be 'chunk' or 'page'")  
         
