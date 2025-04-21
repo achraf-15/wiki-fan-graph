@@ -64,7 +64,10 @@ class cuGraph:
         gdf_edges = gdf_edges.rename(columns={'source': 'src', 'target': 'dst'})
         # Convert to cuGraph
         G_cu = cugraph.Graph()
-        G_cu.from_cudf_edgelist(gdf_edges, source='src', destination='dst', edge_attr='weight', renumber=True)
+        if self.graph_type == 'chunk':
+            G_cu.from_cudf_edgelist(gdf_edges, source='src', destination='dst', edge_attr='weight', renumber=True)
+        else:
+            G_cu.from_cudf_edgelist(gdf_edges, source='src', destination='dst', renumber=True)
         return gdf_edges, G_cu
     
     
@@ -116,7 +119,7 @@ class cuGraph:
         if inplace:
             self.nodes_df = filtered_df.reset_index(drop=True)
             self.edges_df = self.edges_df[self.edges_df['src'].isin(self.nodes_df['node']) & self.edges_df['dst'].isin(self.nodes_df['node'])]
-        return filtered_df.reset_index(drop=True).sort_values(by, ascending=True)
+        return filtered_df.reset_index(drop=True).sort_values(by, ascending=False)
     
     def filter_edges(self, by: str = "betweenness_centrality", threshold: float = None, top_pct: float = None,
                  hybrid_attrs: list = None, hybrid_func=None, inplace=True):
@@ -142,7 +145,7 @@ class cuGraph:
             self.nodes_df = self.nodes_df[self.nodes_df['node'].isin(
                     cudf.concat([self.edges_df['src'], self.edges_df['dst']])
                 )].reset_index(drop=True)
-        return filtered_df.reset_index(drop=True).sort_values(by, ascending=True)
+        return filtered_df.reset_index(drop=True).sort_values(by, ascending=False)
 
     def remove_dead_ends_and_orphans(self, recurse=False, inplace=True):
         """
