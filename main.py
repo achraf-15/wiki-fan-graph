@@ -19,10 +19,10 @@ verbose = 2
 if __name__ == "__main__":
 
     
-    # crawl(
-    #     verbose=verbose,
-    #     update_only=update_only
-    #     )
+    crawl(
+        verbose=verbose,
+        update_only=update_only
+        )
     
     
     embedding_main(
